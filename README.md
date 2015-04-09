@@ -1,7 +1,7 @@
 # api-examples
 Examples for using the Tech@NYU API.
 
-We've created a JSON-spec reliant API for our club. It's hosted [here](https://api.tnyu.org/v2/], and we'd love for people to build things ontop of it.
+We've created a JSON-spec reliant API for our club. It's hosted [here](https://api.tnyu.org/v2/), and we'd love for people to build things ontop of it.
 
 The public documentation is hosted [here](http://apidocs.tnyu.org/). This is tentitive to new releases, and currently relies on v2 of the API.
 
