@@ -9,7 +9,7 @@ request({
   "url": 'https://api.tnyu.org/v2/events',
   "headers": {
   	"content-type": "application/vnd.api+json",
-  	"accepts": "application/*, text/html, */*"
+  	"accept": "application/*, text/html, */*"
   }
   timeout: 100000
 }, function(err, response, body){
