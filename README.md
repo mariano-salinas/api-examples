@@ -9,7 +9,7 @@ The things we've opened up for people are:
 
 - Events API: `https://api.tnyu.org/v2/events`
 - Skills API: `https://api.tnyu.org/v2/skills`
-- Teams API: `https://api.tnyu.org/v2/`
+- Teams API: `https://api.tnyu.org/v2//teams?include=memberships`
 - Projects: `https://api.tnyu.org/v2/projects`
   - This is tentatively empty, but the schema for this is layed out in the documentation. If you'd like to build things ontop of the Projects API consider our [DemoDays](http://demodays.co) website. We'd love to automate this in the future - adding events into the API and it updating on our DemoDays site.
 
