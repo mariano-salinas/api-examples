@@ -6,7 +6,8 @@ import requests, json
 import requests.packages.urllib3.contrib.pyopenssl
 requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 
-r = requests.get('https://api.tnyu.org/v2/events')
+headers = {'content-type': 'application/vnd.api+json', 'accepts': 'application/*, text/*'}
+r = requests.get('https://api.tnyu.org/v2/events', headers=headers)
 data = json.loads(r.text)
 
 # All events
