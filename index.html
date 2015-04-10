@@ -1,38 +1,1006 @@
-<!DOCTYPE html><html lang="en"><head><title>Tech@NYU API Documentation</title><link rel="stylesheet" href="http://api.tnyu.org/v2/css/documentation.css"><script src="http://use.typekit.net/bpm7cfb.js"></script><script>try{Typekit.load();}catch(e){}</script><script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script><script>$(function() {
-  //just the conditional section widget from https://github.com/ethanresnick/ConditionalSection
-  var ConditionalSections = function(){function a(a){var b,c,d=this;this.container=a;b={that:this};c=function(a){return d.handleEvent(a)};this.toggle=a.find("."+this.constants.classToggle);this.section=a.find("."+this.constants.classSection).eq(0);this.isShown=0<this.toggle.find(":checked").length;0===this.toggle.find("input, a").length&&this.toggle.contents().wrap('<a href="" onclick="return false;" />');this.toggle.find("input").length?this.toggle.change(b,c):this.toggle.click(b,c)}a.prototype.handleEvent=function(a){return this.update()};a.prototype.update=function(){this.isShown=!this.isShown;return this.render()};a.prototype.render=function(){this.container.removeClass(this.constants.classHidden+" "+this.constants.classShown).addClass(this.isShown?this.constants.classShown:this.constants.classHidden);return null};a.prototype.constants={classContainer:"conditional-section",classHidden:"condition-not-met",classShown:"condition-met",classSection:"contents",classToggle:"toggle"};return a}();
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <title>Tech@NYU API Documentation</title>
+      <link rel="stylesheet" href="http://api.tnyu.org/v2/css/documentation.css">
+      <script src="http://use.typekit.net/bpm7cfb.js"></script><script>try{Typekit.load();}catch(e){}</script><script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script><script>$(function() {
+         //just the conditional section widget from https://github.com/ethanresnick/ConditionalSection
+         var ConditionalSections = function(){function a(a){var b,c,d=this;this.container=a;b={that:this};c=function(a){return d.handleEvent(a)};this.toggle=a.find("."+this.constants.classToggle);this.section=a.find("."+this.constants.classSection).eq(0);this.isShown=0<this.toggle.find(":checked").length;0===this.toggle.find("input, a").length&&this.toggle.contents().wrap('<a href="" onclick="return false;" />');this.toggle.find("input").length?this.toggle.change(b,c):this.toggle.click(b,c)}a.prototype.handleEvent=function(a){return this.update()};a.prototype.update=function(){this.isShown=!this.isShown;return this.render()};a.prototype.render=function(){this.container.removeClass(this.constants.classHidden+" "+this.constants.classShown).addClass(this.isShown?this.constants.classShown:this.constants.classHidden);return null};a.prototype.constants={classContainer:"conditional-section",classHidden:"condition-not-met",classShown:"condition-met",classSection:"contents",classToggle:"toggle"};return a}();
+         
+         $('.conditional-section').each(function() {
+           x = new ConditionalSections($(this));
+           x.render();
+         });
+         })
+      </script>
+   </head>
+   <body>
+      <div id="docs">
+         <div id="intro">
+            <h1>Tech@NYU API Documentation</h1>
+            <p>This API lets clients query and manage almost all of tech@nyu&rsquo;s organizational data. For example:</p>
+            <ul>
+               <li>The Ship archive uses it to retrieve all the <a href="#resources-projects"><code>Project</code></a>s we&rsquo;ve shipped, while the Demo Days
+                  archive uses it to retrieve all the Projects shown at a given Demo Days, as well as information about who spoke and where the event was.
+               </li>
+               <li>The primary tech@nyu website uses its <a href="#resources-events"><code>Event</code></a>s to power the event calendar, and to show the
+                  current board members and their <a href="#resources-teams"><code>Team</code></a> affiliations.
+               </li>
+               <li>An eboard member might query the API in search of a speaker or venue for his/her event, as the API can list <a href="#resources-presenters">
+                  <code>Presenter</code></a>s and <a href="#resources-venues"><code>Venue</code></a>s from prior tech@nyu events. For presenters, it also
+                  shows the expertise of each and the tech@nyu events they&rsquo;ve presented at.
+               </li>
+            </ul>
+         </div>
+         <section id="overview">
+            <h2 class="with-p">Usage Overview</h2>
+            <p>This API is compliant with the <a href="http://jsonapi.org/">JSON API</a> specification, which
+               defines conventions for listing, reading, creating, updating, and deleting resources. When fetching
+               a resource or resources, the spec also offers conventions for: <a href="http://jsonapi.org/format/#fetching-sorting">
+               sorting the returned resources</a>, <a href="http://jsonapi.org/format/#fetching-sparse-fieldsets">
+               limiting the fields returned in each resource</a>, <a href="http://jsonapi.org/format/#fetching-includes">
+               including related resources</a> to form <a href="http://jsonapi.org/format/#document-structure-compound-documents">
+               compound documents</a>, etc. Accordingly, these features of the Tech@NYU API aren&rsquo;t redocumented here;
+               simply see the JSON API <a href="http://jsonapi.org/format">spec</a> to learn how to use them.
+            </p>
+            <section>
+               <h3 class="with-p">Unsupported JSON API features</h3>
+               <p>This implementation of JSON API does not allow clients to set a resource&rsquo;s id; any attempt to
+                  do so will be  silently ignored, with the server-generated id being used instead. This implementation
+                  also does not yet support <code class="http-method">PATCH</code> operations of any kind or using
+                  <a href="http://jsonapi.org/format/#urls-relationships">relationship endpoints</a>.
+               </p>
+            </section>
+            <section id="authorization">
+               <h3 class="with-p">Authorization</h3>
+               <p>Currently, only one authorization scheme has been implemented, and it&rsquo;s designed to support browser-based JS apps that need access
+                  access to protected resources based on a user&rsquo;s provided credentials. The user verifies himself by signing in with Facebook, and,
+                  upon doing so, he receives certain privileges through roles associated with his account.
+               </p>
+               <p>But because browser-based apps can&rsquo;t keep secrets (i.e. they&rsquo;re code is completely transparent), they shouldn&rsquo;t directly
+                  initiate the OAuth handshake with Facebook. So instead, the scheme works as described below.
+               </p>
+               <h4 id="authorization-sign-in">Signing In</h4>
+               <ol>
+                  <li>The JS app presents a button to the user that, when clicked sends the user to <code>https://api.tnyu.org/v2/auth/facebook?success={goodUrl}&error={errUrl}</code>,
+                     where <var>goodUrl</var> and <var>errUrl</var> are the urls for the pages in the application that the user should be sent to when, respectively,
+                     the login is complete or the login fails. The error page isn&rsquo;t given any information about the source of the error, though this may change. For now,
+                     it should simply promp the user to <a href="#authorization-log-out">log out</a> and try signing in again. To just login to the API <code>https://api.tnyu.org/v2/auth/facebook</code>
+                  </li>
+                  <li>Assuming authorization succeeded, the server will set a standard session cookie associated with <code>api.tnyu.org</code>, which will be
+                     used by the server to allow access to protected resources on subsequent requests. All traffic to api.tnyu.org is encrypted with <abbr>SSL</abbr>,
+                     to prevent session hijacking etc.
+                  </li>
+               </ol>
+               <h4 id="authorization-log-out">Logging Out</h4>
+               <p>Simply send a <code class="http-method">GET</code> request to <code>https://api.tnyu.org/auth/facebook/logout</code>.</p>
+            </section>
+         </section>
+         <section id="resources">
+            <h2>Resource Types</h2>
+            <!--find the root nodes-->
+            <section id="resources-events">
+               <h3>Event</h3>
+               <!--allow subtemplates to stick in sections before the fields.-->
+               <h4>Access Restrictions</h4>
+               <table>
+                  <thead>
+                     <th>Action</th>
+                     <th>Required Role</th>
+                  </thead>
+                  <tr>
+                     <td>List</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Read</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Create</td>
+                     <td>TEAM_MEMBER</td>
+                  </tr>
+                  <tr>
+                     <td>Bulk Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Delete</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+               </table>
+               <h4>Fields</h4>
+               <table>
+                  <thead>
+                     <tr>
+                        <th>Field Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                     </tr>
+                  </thead>
+                  <!--move id to the top for display-->
+                  <tr>
+                     <td><span id="resources-events-id">id</span></td>
+                     <td>Id</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-events-title">title</b></td>
+                     <td>String</td>
+                     <td>Used for meetup, facebook, etc.</td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-shortTitle">shortTitle</span></td>
+                     <td>String</td>
+                     <td>For the homepage of our site, where the title is character constrained.</td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-description">description</span></td>
+                     <td>String</td>
+                     <td>One or two sentences on the event's purpose.</td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-details">details</span></td>
+                     <td>String</td>
+                     <td>Information like: exactly what attendees will make, what they should install in advance, how to get into the building, etc. (Does not include the speakers' bios, if any.)</td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-venue">venue</span></td>
+                     <td>VenueId</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-startDateTime">startDateTime</span></td>
+                     <td>Date</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-endDateTime">endDateTime</span></td>
+                     <td>Date</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-teams">teams</span></td>
+                     <td>Array[TeamId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-coorganizers">coorganizers</span></td>
+                     <td>Array[OrganizationId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-presenters">presenters</span></td>
+                     <td>Array[PresenterId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-attendees">attendees</span></td>
+                     <td>Array[PersonId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-rsvpUrl">rsvpUrl</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-status">status</span></td>
+                     <td>EventStatusId</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-isInternal">isInternal</span></td>
+                     <td>Boolean</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-addedBy">addedBy</span></td>
+                     <td>PersonId</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-created">created</span></td>
+                     <td>Date</td>
+                     <td>
+                        <dl>
+                           <dt>Default Value</dt>
+                           <dd>(auto generated)</dd>
+                        </dl>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-events-modified">modified</span></td>
+                     <td>Date</td>
+                     <td>
+                        <dl>
+                           <dt>Default Value</dt>
+                           <dd>(auto generated)</dd>
+                        </dl>
+                     </td>
+                  </tr>
+               </table>
+               <!--allow subtemplates to add content after the fields-->
+            </section>
 
-  $('.conditional-section').each(function() {
-    x = new ConditionalSections($(this));
-    x.render();
-  });
-})</script></head><body><div id="docs"><div id="intro"><h1>Tech@NYU API Documentation</h1><p>This API lets clients query and manage almost all of tech@nyu&rsquo;s organizational data. For example:</p><ul><li>The Ship archive uses it to retrieve all the <a href="#resources-projects"><code>Project</code></a>s we&rsquo;ve shipped, while the Demo Days
-archive uses it to retrieve all the Projects shown at a given Demo Days, as well as information about who spoke and where the event was.</li><li>The primary tech@nyu website uses its <a href="#resources-events"><code>Event</code></a>s to power the event calendar, and to show the
-current board members and their <a href="#resources-teams"><code>Team</code></a> affiliations.</li><li>An eboard member might query the API in search of a speaker or venue for his/her event, as the API can list <a href="#resources-presenters">
-<code>Presenter</code></a>s and <a href="#resources-venues"><code>Venue</code></a>s from prior tech@nyu events. For presenters, it also
-shows the expertise of each and the tech@nyu events they&rsquo;ve presented at.
-</li></ul></div><section id="overview"><h2 class="with-p">Usage Overview</h2><p>This API is compliant with the <a href="http://jsonapi.org/">JSON API</a> specification, which
-defines conventions for listing, reading, creating, updating, and deleting resources. When fetching
-a resource or resources, the spec also offers conventions for: <a href="http://jsonapi.org/format/#fetching-sorting">
-sorting the returned resources</a>, <a href="http://jsonapi.org/format/#fetching-sparse-fieldsets">
-limiting the fields returned in each resource</a>, <a href="http://jsonapi.org/format/#fetching-includes">
-including related resources</a> to form <a href="http://jsonapi.org/format/#document-structure-compound-documents">
-compound documents</a>, etc. Accordingly, these features of the Tech@NYU API aren&rsquo;t redocumented here;
-simply see the JSON API <a href="http://jsonapi.org/format">spec</a> to learn how to use them.
-</p><section><h3 class="with-p">Unsupported JSON API features</h3><p>This implementation of JSON API does not allow clients to set a resource&rsquo;s id; any attempt to
-do so will be  silently ignored, with the server-generated id being used instead. This implementation
-also does not yet support <code class="http-method">PATCH</code> operations of any kind or using
-<a href="http://jsonapi.org/format/#urls-relationships">relationship endpoints</a>.
-</p></section><section id="authorization"><h3 class="with-p">Authorization</h3><p>Currently, only one authorization scheme has been implemented, and it&rsquo;s designed to support browser-based JS apps that need access
-access to protected resources based on a user&rsquo;s provided credentials. The user verifies himself by signing in with Facebook, and,
-upon doing so, he receives certain privileges through roles associated with his account.
-</p><p>But because browser-based apps can&rsquo;t keep secrets (i.e. they&rsquo;re code is completely transparent), they shouldn&rsquo;t directly
-initiate the OAuth handshake with Facebook. So instead, the scheme works as described below.
-</p><h4 id="authorization-sign-in">Signing In</h4><ol><li>The JS app presents a button to the user that, when clicked sends the user to <code>https://api.tnyu.org/v2/auth/facebook?success={goodUrl}&error={errUrl}</code>,
-where <var>goodUrl</var> and <var>errUrl</var> are the urls for the pages in the application that the user should be sent to when, respectively,
-the login is complete or the login fails. The error page isn&rsquo;t given any information about the source of the error, though this may change. For now,
-it should simply promp the user to <a href="#authorization-log-out">log out</a> and try signing in again. To just login to the API <code>https://api.tnyu.org/v2/auth/facebook</code></li><li>Assuming authorization succeeded, the server will set a standard session cookie associated with <code>api.tnyu.org</code>, which will be
-used by the server to allow access to protected resources on subsequent requests. All traffic to api.tnyu.org is encrypted with <abbr>SSL</abbr>,
-to prevent session hijacking etc.
-</li></ol><h4 id="authorization-log-out">Logging Out</h4><p>Simply send a <code class="http-method">GET</code> request to <code>https://api.tnyu.org/auth/facebook/logout</code>.</p></section></section><section id="resources"><h2>Resource Types</h2><!--find the root nodes--><section id="resources-events"><h3>Event</h3><!--allow subtemplates to stick in sections before the fields.--><h4>Access Restrictions</h4><table><thead><th>Action</th><th>Required Role</th></thead><tr><td>List</td><td>PUBLIC</td></tr><tr><td>Read</td><td>PUBLIC</td></tr><tr><td>Create</td><td>TEAM_MEMBER</td></tr><tr><td>Bulk Update</td><td>ADMIN or TEAM_LEAD</td></tr><tr><td>Update</td><td>ADMIN or TEAM_LEAD</td></tr><tr><td>Delete</td><td>ADMIN or TEAM_LEAD</td></tr></table><h4>Fields</h4><table><thead><tr><th>Field Name</th><th>Type</th><th>Description</th></tr></thead><!--move id to the top for display--><tr><td><span id="resources-events-id">id</span></td><td>Id</td><td></td></tr><tr><td><b id="resources-events-title">title</b></td><td>String</td><td>Used for meetup, facebook, etc.</td></tr><tr><td><span id="resources-events-shortTitle">shortTitle</span></td><td>String</td><td>For the homepage of our site, where the title is character constrained.</td></tr><tr><td><span id="resources-events-description">description</span></td><td>String</td><td>One or two sentences on the event's purpose.</td></tr><tr><td><span id="resources-events-details">details</span></td><td>String</td><td>Information like: exactly what attendees will make, what they should install in advance, how to get into the building, etc. (Does not include the speakers' bios, if any.)</td></tr><tr><td><span id="resources-events-venue">venue</span></td><td>VenueId</td><td></td></tr><tr><td><span id="resources-events-startDateTime">startDateTime</span></td><td>Date</td><td></td></tr><tr><td><span id="resources-events-endDateTime">endDateTime</span></td><td>Date</td><td></td></tr><tr><td><span id="resources-events-teams">teams</span></td><td>Array[TeamId]</td><td></td></tr><tr><td><span id="resources-events-coorganizers">coorganizers</span></td><td>Array[OrganizationId]</td><td></td></tr><tr><td><span id="resources-events-presenters">presenters</span></td><td>Array[PresenterId]</td><td></td></tr><tr><td><span id="resources-events-attendees">attendees</span></td><td>Array[PersonId]</td><td></td></tr><tr><td><span id="resources-events-rsvpUrl">rsvpUrl</span></td><td>String</td><td></td></tr><tr><td><span id="resources-events-status">status</span></td><td>EventStatusId</td><td></td></tr><tr><td><span id="resources-events-isInternal">isInternal</span></td><td>Boolean</td><td></td></tr><tr><td><span id="resources-events-addedBy">addedBy</span></td><td>PersonId</td><td></td></tr><tr><td><span id="resources-events-created">created</span></td><td>Date</td><td><dl><dt>Default Value</dt><dd>(auto generated)</dd></dl></td></tr><tr><td><span id="resources-events-modified">modified</span></td><td>Date</td><td><dl><dt>Default Value</dt><dd>(auto generated)</dd></dl></td></tr></table><!--allow subtemplates to add content after the fields--></section><!--find the root nodes--><section id="resources-jobs"><h3>Job</h3><!--allow subtemplates to stick in sections before the fields.--><h4>Access Restrictions</h4><table><thead><th>Action</th><th>Required Role</th></thead><tr><td>List</td><td>PUBLIC</td></tr><tr><td>Read</td><td>PUBLIC</td></tr><tr><td>Create</td><td>ADMIN or BIZ_DEV or INFRASTURCTURE</td></tr><tr><td>Bulk Update</td><td>ADMIN or BIZ_DEV_LEAD</td></tr><tr><td>Update</td><td>ADMIN or BIZ_DEV_LEAD</td></tr><tr><td>Delete</td><td>ADMIN or BIZ_DEV_LEAD</td></tr></table><h4>Fields</h4><table><thead><tr><th>Field Name</th><th>Type</th><th>Description</th></tr></thead><!--move id to the top for display--><tr><td><span id="resources-jobs-id">id</span></td><td>Id</td><td></td></tr><tr><td><b id="resources-jobs-positionTitle">positionTitle</b></td><td>String</td><td></td></tr><tr><td><b id="resources-jobs-description">description</b></td><td>String</td><td></td></tr><tr><td><b id="resources-jobs-category">category</b></td><td>String</td><td></td></tr><tr><td><b id="resources-jobs-positionLevel">positionLevel</b></td><td>String</td><td></td></tr><tr><td><span id="resources-jobs-applicationUrl">applicationUrl</span></td><td>String</td><td></td></tr><tr><td><span id="resources-jobs-applicationEmail">applicationEmail</span></td><td>String</td><td></td></tr><tr><td><span id="resources-jobs-employer">employer</span></td><td>OrganizationId</td><td></td></tr><tr><td><b id="resources-jobs-postingFee">postingFee</b></td><td>Number</td><td>How much Tech@NYU was paid to post this Job.</td></tr><tr><td><b id="resources-jobs-exiresAt">exiresAt</b></td><td>Date</td><td></td></tr><tr><td><span id="resources-jobs-created">created</span></td><td>Date</td><td><dl><dt>Default Value</dt><dd>(auto generated)</dd></dl></td></tr><tr><td><span id="resources-jobs-modified">modified</span></td><td>Date</td><td><dl><dt>Default Value</dt><dd>(auto generated)</dd></dl></td></tr></table><!--allow subtemplates to add content after the fields--></section><!--find the root nodes--><!--find the root nodes--><section id="resources-teams"><h3>Team</h3><!--allow subtemplates to stick in sections before the fields.--><h4>Access Restrictions</h4><table><thead><th>Action</th><th>Required Role</th></thead><tr><td>List</td><td>PUBLIC</td></tr><tr><td>Read</td><td>PUBLIC</td></tr><tr><td>Create</td><td>ADMIN</td></tr><tr><td>Bulk Update</td><td>ADMIN or TEAM_LEAD</td></tr><tr><td>Update</td><td>ADMIN or TEAM_LEAD</td></tr><tr><td>Delete</td><td>ADMIN</td></tr></table><h4>Fields</h4><table><thead><tr><th>Field Name</th><th>Type</th><th>Description</th></tr></thead><!--move id to the top for display--><tr><td><span id="resources-teams-id">id</span></td><td>Id</td><td></td></tr><tr><td><span id="resources-teams-name">name</span></td><td>String</td><td></td></tr><tr><td><span id="resources-teams-isMeta">isMeta</span></td><td>Boolean</td><td>Some teams put on events (e.g. the Demo Days team). Meta teams are those teams that support the event teams (e.g. Marketing, Infrastructure, etc).</td></tr><tr><td><span id="resources-teams-email">email</span></td><td>String</td><td></td></tr><tr><td><span id="resources-teams-photos">photos</span></td><td>Array[String]</td><td></td></tr><tr><td><span id="resources-teams-memberships">memberships</span></td><td>Array[TeamMembershipId]</td><td></td></tr><tr><td><span id="resources-teams-roleName">roleName</span></td><td>String</td><td></td></tr><tr><td><span id="resources-teams-created">created</span></td><td>Date</td><td><dl><dt>Default Value</dt><dd>(auto generated)</dd></dl></td></tr><tr><td><span id="resources-teams-modified">modified</span></td><td>Date</td><td><dl><dt>Default Value</dt><dd>(auto generated)</dd></dl></td></tr></table><!--allow subtemplates to add content after the fields--></section><!--find the root nodes-->
-<section id="resources-projects"><h3>Project</h3><!--allow subtemplates to stick in sections before the fields.--><h4>Access Restrictions</h4><table><thead><th>Action</th><th>Required Role</th></thead><tr><td>List</td><td>PUBLIC</td></tr><tr><td>Read</td><td>PUBLIC</td></tr><tr><td>Create</td><td>TEAM_MEMBER</td></tr><tr><td>Bulk Update</td><td>ADMIN or TEAM_LEAD</td></tr><tr><td>Update</td><td>ADMIN or TEAM_LEAD</td></tr><tr><td>Delete</td><td>ADMIN or TEAM_LEAD</td></tr></table><h4>Fields</h4><table><thead><tr><th>Field Name</th><th>Type</th><th>Description</th></tr></thead><!--move id to the top for display--><tr><td><span id="resources-projects-id">id</span></td><td>Id</td><td></td></tr><tr><td><span id="resources-projects-title">title</span></td><td>String</td><td></td></tr><tr><td><span id="resources-projects-description">description</span></td><td>String</td><td></td></tr><tr><td><span id="resources-projects-imgUrl">imgUrl</span></td><td>String</td><td></td></tr><tr><td><span id="resources-projects-url">url</span></td><td>String</td><td></td></tr><tr><td><span id="resources-projects-category">category</span></td><td>String</td><td></td></tr><tr><td><span id="resources-projects-featured">featured</span></td><td>Boolean</td><td></td></tr><tr><td><span id="resources-projects-creators">creators</span></td><td>Array[PersonId]</td><td></td></tr><tr><td><span id="resources-projects-shownAt">shownAt</span></td><td>Array[EventId]</td><td></td></tr><tr><td><span id="resources-projects-created">created</span></td><td>Date</td><td><dl><dt>Default Value</dt><dd>(auto generated)</dd></dl></td></tr><tr><td><span id="resources-projects-modified">modified</span></td><td>Date</td><td><dl><dt>Default Value</dt><dd>(auto generated)</dd></dl></td></tr></table><!--allow subtemplates to add content after the fields--></section><!--find the root nodes--><section id="resources-team-memberships"><h3>TeamMembership</h3><!--allow subtemplates to stick in sections before the fields.--><h4>Access Restrictions</h4><table><thead><th>Action</th><th>Required Role</th></thead><tr><td>List</td><td>PUBLIC</td></tr><tr><td>Read</td><td>PUBLIC</td></tr><tr><td>Create</td><td>ADMIN</td></tr><tr><td>Bulk Update</td><td>ADMIN or TEAM_LEAD</td></tr><tr><td>Update</td><td>ADMIN or TEAM_LEAD</td></tr><tr><td>Delete</td><td>ADMIN or TEAM_LEAD</td></tr></table><h4>Fields</h4><table><thead><tr><th>Field Name</th><th>Type</th><th>Description</th></tr></thead><!--move id to the top for display--><tr><td><span id="resources-team-memberships-id">id</span></td><td>Id</td><td></td></tr><tr><td><b id="resources-team-memberships-member">member</b></td><td>PersonId</td><td></td></tr><tr><td><b id="resources-team-memberships-isLead">isLead</b></td><td>Boolean</td><td></td></tr><tr><td><b id="resources-team-memberships-startDate">startDate</b></td><td>Date</td><td></td></tr><tr><td><span id="resources-team-memberships-endDate">endDate</span></td><td>Date</td><td></td></tr></table><!--allow subtemplates to add content after the fields--></section><!--find the root nodes--><section id="resources-event-statuses"><h3>EventStatus</h3><!--allow subtemplates to stick in sections before the fields.--><h4>Access Restrictions</h4><table><thead><th>Action</th><th>Required Role</th></thead><tr><td>List</td><td>PUBLIC</td></tr><tr><td>Read</td><td>PUBLIC</td></tr><tr><td>Create</td><td>ADMIN</td></tr><tr><td>Bulk Update</td><td>ADMIN</td></tr><tr><td>Update</td><td>ADMIN</td></tr><tr><td>Delete</td><td>ADMIN</td></tr></table><h4>Fields</h4><table><thead><tr><th>Field Name</th><th>Type</th><th>Description</th></tr></thead><!--move id to the top for display--><tr><td><span id="resources-event-statuses-id">id</span></td><td>Id</td><td></td></tr><tr><td><b id="resources-event-statuses-name">name</b></td><td>String</td><td></td></tr><tr><td><span id="resources-event-statuses-canTransitionTo">canTransitionTo</span></td><td>Array[EventStatusId]</td><td></td></tr></table><!--allow subtemplates to add content after the fields--></section><!--find the root nodes--><section id="resources-skills"><h3>Skill</h3><!--allow subtemplates to stick in sections before the fields.--><h4>Access Restrictions</h4><table><thead><th>Action</th><th>Required Role</th></thead><tr><td>List</td><td>PUBLIC</td></tr><tr><td>Read</td><td>PUBLIC</td></tr><tr><td>Create</td><td>ADMIN</td></tr><tr><td>Bulk Update</td><td>ADMIN</td></tr><tr><td>Update</td><td>ADMIN</td></tr><tr><td>Delete</td><td>ADMIN</td></tr></table><h4>Fields</h4><table><thead><tr><th>Field Name</th><th>Type</th><th>Description</th></tr></thead><!--move id to the top for display--><tr><td><span id="resources-skills-id">id</span></td><td>Id</td><td></td></tr><tr><td><span id="resources-skills-name">name</span></td><td>String</td><td></td></tr><tr><td><span id="resources-skills-category">category</span></td><td>String</td><td></td></tr></table><!--allow subtemplates to add content after the fields--></section></section><section id="footer"></section></div><nav><ul><li><a href="#intro">Introduction</a></li><li><a href="#overview">Usage Overview</a></li><li><h3 class="h4">Resource Types</h3><ul><li><a href="#resources-events">Event</a></li><li><a href="#resources-jobs">Job</a></li><li><a href="#resources-teams">Team</a></li><li><a href="#resources-projects">Project</a></li><li><a href="#resources-team-memberships">TeamMembership</a></li><li><a href="#resources-event-statuses">EventStatus</a></li><li><a href="#resources-skills">Skill</a></li></ul></li></ul></nav></body></html>
+            <section id="resources-people">
+               <h3 class="with-p">Person</h3>
+               <p>People objects represent anyone who comes into contact with tech@nyu—attendees, board members, speakers, etc.</p>
+               <!--allow subtemplates to stick in sections before the fields.-->
+               <h4>Access Restrictions</h4>
+               <table>
+                  <thead>
+                     <th>Action</th>
+                     <th>Required Role</th>
+                  </thead>
+                  <tr>
+                     <td>List</td>
+                     <td>TEAM_MEMBER or ALUM</td>
+                  </tr>
+                  <tr>
+                     <td>Read</td>
+                     <td>TEAM_MEMBER or ALUM</td>
+                  </tr>
+                  <tr>
+                     <td>Create</td>
+                     <td>TEAM_MEMBER</td>
+                  </tr>
+                  <tr>
+                     <td>Bulk Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Delete</td>
+                     <td>ADMIN</td>
+                  </tr>
+               </table>
+               <h4>Fields</h4>
+               <table>
+                  <thead>
+                     <tr>
+                        <th>Field Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                     </tr>
+                  </thead>
+                  <!--move id to the top for display-->
+                  <tr>
+                     <td><span id="resources-people-id">id</span></td>
+                     <td>Id</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-people-name">name</b></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-currentEmployer">currentEmployer</span></td>
+                     <td>OrganizationId</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-twitterId">twitterId</span></td>
+                     <td>String</td>
+                     <td>Not the person’s twitter username, but their <a href='http://gettwitterid.com/'>numerical twitter id</a>. This is needed for security, as a person can change usernames, but their id always remains.</td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-facebookId">facebookId</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-gender">gender</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-contact.phone">contact.phone</span></td>
+                     <td>String</td>
+                     <td>
+                        No dashes, no spaces. Just <span style="white-space:nowrap;">+[CountryCode][Number]</span>, e.g. +13104398032. 
+                        <p class="restrictedTo">This field is only shown in API responses if the user making the request has either the TEAM_MEMBER or ADMIN roles.</p>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-contact.email">contact.email</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-contact.twitter">contact.twitter</span></td>
+                     <td>String</td>
+                     <td>The person’s twitter username.</td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-skills">skills</span></td>
+                     <td>Array[SkillId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-wantsToLearn">wantsToLearn</span></td>
+                     <td>Array[SkillId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-wantsToHire">wantsToHire</span></td>
+                     <td>Array[SkillId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-roles">roles</span></td>
+                     <td>Array[String]</td>
+                     <td>A list of roles the Person has, each of which grants them various permissions. This field can't be modified through the API—all attempts to do so will be silently ignored. Instead, the roles are a function of the TeamMembership's that the user is associated with.</td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-notes">notes</span></td>
+                     <td>String</td>
+                     <td>
+                        Stores our notes about the Person, which can be useful for presenters, eboard applicants, club liaisons, etc. If you add content to this field, please note in the text which parts you put in; in other words, all content in this field should be attributeable to an author.
+                        <p class='restrictedTo'>This field is only shown in API responses if the user making the request has either the TEAM_LEAD or ADMIN roles.</p>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-imgUrl">imgUrl</span></td>
+                     <td>String</td>
+                     <td>URL of the person’s headshot. This headshot should usually be accessible at http://api.tnyu.org/img/people/{name}.(png|jpg), but clients cannot assume this (hence the field). The headshot should be square, and at least 300x300 pixels. PNG or JPG is expected.</td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-schools">schools</span></td>
+                     <td>Array[SchoolAttendanceId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-created">created</span></td>
+                     <td>Date</td>
+                     <td>
+                        <dl>
+                           <dt>Default Value</dt>
+                           <dd>(auto generated)</dd>
+                        </dl>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-people-modified">modified</span></td>
+                     <td>Date</td>
+                     <td>
+                        <dl>
+                           <dt>Default Value</dt>
+                           <dd>(auto generated)</dd>
+                        </dl>
+                     </td>
+                  </tr>
+               </table>
+               <!--allow subtemplates to add content after the fields-->
+            </section>
+            <section id="resources-presenters">
+               <h3>Presenter</h3>
+               <p><code>Presenter</code> resources extend <a href="#resources-people"><code>Person</code></a>
+                  resources, meaning they have all the same fields and requirements. The fields shown below are only the <em>additional</em> fields
+                  that <code>Presenter</code> resources have but <code>Person</code> resources don&rsquo;t.
+               </p>
+               <!--allow subtemplates to stick in sections before the fields.-->
+               <h4>Access Restrictions</h4>
+               <table>
+                  <thead>
+                     <th>Action</th>
+                     <th>Required Role</th>
+                  </thead>
+                  <tr>
+                     <td>List</td>
+                     <td>TEAM_MEMBER or ALUM</td>
+                  </tr>
+                  <tr>
+                     <td>Read</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Create</td>
+                     <td>TEAM_MEMBER</td>
+                  </tr>
+                  <tr>
+                     <td>Bulk Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Delete</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+               </table>
+               <h4>Fields</h4>
+               <table>
+                  <thead>
+                     <tr>
+                        <th>Field Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                     </tr>
+                  </thead>
+                  <!--move id to the top for display-->
+                  <tr>
+                     <td><span id="resources-presenters-title">title</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-presenters-url">url</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-presenters-shortBio">shortBio</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+               </table>
+               <!--allow subtemplates to add content after the fields-->
+            </section>
+
+            <section id="resources-jobs">
+               <h3>Job</h3>
+               <!--allow subtemplates to stick in sections before the fields.-->
+               <h4>Access Restrictions</h4>
+               <table>
+                  <thead>
+                     <th>Action</th>
+                     <th>Required Role</th>
+                  </thead>
+                  <tr>
+                     <td>List</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Read</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Create</td>
+                     <td>ADMIN or BIZ_DEV or INFRASTURCTURE</td>
+                  </tr>
+                  <tr>
+                     <td>Bulk Update</td>
+                     <td>ADMIN or BIZ_DEV_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Update</td>
+                     <td>ADMIN or BIZ_DEV_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Delete</td>
+                     <td>ADMIN or BIZ_DEV_LEAD</td>
+                  </tr>
+               </table>
+               <h4>Fields</h4>
+               <table>
+                  <thead>
+                     <tr>
+                        <th>Field Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                     </tr>
+                  </thead>
+                  <!--move id to the top for display-->
+                  <tr>
+                     <td><span id="resources-jobs-id">id</span></td>
+                     <td>Id</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-jobs-positionTitle">positionTitle</b></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-jobs-description">description</b></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-jobs-category">category</b></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-jobs-positionLevel">positionLevel</b></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-jobs-applicationUrl">applicationUrl</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-jobs-applicationEmail">applicationEmail</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-jobs-employer">employer</span></td>
+                     <td>OrganizationId</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-jobs-postingFee">postingFee</b></td>
+                     <td>Number</td>
+                     <td>How much Tech@NYU was paid to post this Job.</td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-jobs-exiresAt">exiresAt</b></td>
+                     <td>Date</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-jobs-created">created</span></td>
+                     <td>Date</td>
+                     <td>
+                        <dl>
+                           <dt>Default Value</dt>
+                           <dd>(auto generated)</dd>
+                        </dl>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-jobs-modified">modified</span></td>
+                     <td>Date</td>
+                     <td>
+                        <dl>
+                           <dt>Default Value</dt>
+                           <dd>(auto generated)</dd>
+                        </dl>
+                     </td>
+                  </tr>
+               </table>
+               <!--allow subtemplates to add content after the fields-->
+            </section>
+            <!--find the root nodes--><!--find the root nodes-->
+            <section id="resources-teams">
+               <h3>Team</h3>
+               <!--allow subtemplates to stick in sections before the fields.-->
+               <h4>Access Restrictions</h4>
+               <table>
+                  <thead>
+                     <th>Action</th>
+                     <th>Required Role</th>
+                  </thead>
+                  <tr>
+                     <td>List</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Read</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Create</td>
+                     <td>ADMIN</td>
+                  </tr>
+                  <tr>
+                     <td>Bulk Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Delete</td>
+                     <td>ADMIN</td>
+                  </tr>
+               </table>
+               <h4>Fields</h4>
+               <table>
+                  <thead>
+                     <tr>
+                        <th>Field Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                     </tr>
+                  </thead>
+                  <!--move id to the top for display-->
+                  <tr>
+                     <td><span id="resources-teams-id">id</span></td>
+                     <td>Id</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-teams-name">name</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-teams-isMeta">isMeta</span></td>
+                     <td>Boolean</td>
+                     <td>Some teams put on events (e.g. the Demo Days team). Meta teams are those teams that support the event teams (e.g. Marketing, Infrastructure, etc).</td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-teams-email">email</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-teams-photos">photos</span></td>
+                     <td>Array[String]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-teams-memberships">memberships</span></td>
+                     <td>Array[TeamMembershipId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-teams-roleName">roleName</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-teams-created">created</span></td>
+                     <td>Date</td>
+                     <td>
+                        <dl>
+                           <dt>Default Value</dt>
+                           <dd>(auto generated)</dd>
+                        </dl>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-teams-modified">modified</span></td>
+                     <td>Date</td>
+                     <td>
+                        <dl>
+                           <dt>Default Value</dt>
+                           <dd>(auto generated)</dd>
+                        </dl>
+                     </td>
+                  </tr>
+               </table>
+               <!--allow subtemplates to add content after the fields-->
+            </section>
+            <!--find the root nodes-->
+            <section id="resources-projects">
+               <h3>Project</h3>
+               <!--allow subtemplates to stick in sections before the fields.-->
+               <h4>Access Restrictions</h4>
+               <table>
+                  <thead>
+                     <th>Action</th>
+                     <th>Required Role</th>
+                  </thead>
+                  <tr>
+                     <td>List</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Read</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Create</td>
+                     <td>TEAM_MEMBER</td>
+                  </tr>
+                  <tr>
+                     <td>Bulk Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Delete</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+               </table>
+               <h4>Fields</h4>
+               <table>
+                  <thead>
+                     <tr>
+                        <th>Field Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                     </tr>
+                  </thead>
+                  <!--move id to the top for display-->
+                  <tr>
+                     <td><span id="resources-projects-id">id</span></td>
+                     <td>Id</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-projects-title">title</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-projects-description">description</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-projects-imgUrl">imgUrl</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-projects-url">url</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-projects-category">category</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-projects-featured">featured</span></td>
+                     <td>Boolean</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-projects-creators">creators</span></td>
+                     <td>Array[PersonId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-projects-shownAt">shownAt</span></td>
+                     <td>Array[EventId]</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-projects-created">created</span></td>
+                     <td>Date</td>
+                     <td>
+                        <dl>
+                           <dt>Default Value</dt>
+                           <dd>(auto generated)</dd>
+                        </dl>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-projects-modified">modified</span></td>
+                     <td>Date</td>
+                     <td>
+                        <dl>
+                           <dt>Default Value</dt>
+                           <dd>(auto generated)</dd>
+                        </dl>
+                     </td>
+                  </tr>
+               </table>
+               <!--allow subtemplates to add content after the fields-->
+            </section>
+            <!--find the root nodes-->
+            <section id="resources-team-memberships">
+               <h3>TeamMembership</h3>
+               <!--allow subtemplates to stick in sections before the fields.-->
+               <h4>Access Restrictions</h4>
+               <table>
+                  <thead>
+                     <th>Action</th>
+                     <th>Required Role</th>
+                  </thead>
+                  <tr>
+                     <td>List</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Read</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Create</td>
+                     <td>ADMIN</td>
+                  </tr>
+                  <tr>
+                     <td>Bulk Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Update</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+                  <tr>
+                     <td>Delete</td>
+                     <td>ADMIN or TEAM_LEAD</td>
+                  </tr>
+               </table>
+               <h4>Fields</h4>
+               <table>
+                  <thead>
+                     <tr>
+                        <th>Field Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                     </tr>
+                  </thead>
+                  <!--move id to the top for display-->
+                  <tr>
+                     <td><span id="resources-team-memberships-id">id</span></td>
+                     <td>Id</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-team-memberships-member">member</b></td>
+                     <td>PersonId</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-team-memberships-isLead">isLead</b></td>
+                     <td>Boolean</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-team-memberships-startDate">startDate</b></td>
+                     <td>Date</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-team-memberships-endDate">endDate</span></td>
+                     <td>Date</td>
+                     <td></td>
+                  </tr>
+               </table>
+               <!--allow subtemplates to add content after the fields-->
+            </section>
+            <!--find the root nodes-->
+            <section id="resources-event-statuses">
+               <h3>EventStatus</h3>
+               <!--allow subtemplates to stick in sections before the fields.-->
+               <h4>Access Restrictions</h4>
+               <table>
+                  <thead>
+                     <th>Action</th>
+                     <th>Required Role</th>
+                  </thead>
+                  <tr>
+                     <td>List</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Read</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Create</td>
+                     <td>ADMIN</td>
+                  </tr>
+                  <tr>
+                     <td>Bulk Update</td>
+                     <td>ADMIN</td>
+                  </tr>
+                  <tr>
+                     <td>Update</td>
+                     <td>ADMIN</td>
+                  </tr>
+                  <tr>
+                     <td>Delete</td>
+                     <td>ADMIN</td>
+                  </tr>
+               </table>
+               <h4>Fields</h4>
+               <table>
+                  <thead>
+                     <tr>
+                        <th>Field Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                     </tr>
+                  </thead>
+                  <!--move id to the top for display-->
+                  <tr>
+                     <td><span id="resources-event-statuses-id">id</span></td>
+                     <td>Id</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><b id="resources-event-statuses-name">name</b></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-event-statuses-canTransitionTo">canTransitionTo</span></td>
+                     <td>Array[EventStatusId]</td>
+                     <td></td>
+                  </tr>
+               </table>
+               <!--allow subtemplates to add content after the fields-->
+            </section>
+            <!--find the root nodes-->
+            <section id="resources-skills">
+               <h3>Skill</h3>
+               <!--allow subtemplates to stick in sections before the fields.-->
+               <h4>Access Restrictions</h4>
+               <table>
+                  <thead>
+                     <th>Action</th>
+                     <th>Required Role</th>
+                  </thead>
+                  <tr>
+                     <td>List</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Read</td>
+                     <td>PUBLIC</td>
+                  </tr>
+                  <tr>
+                     <td>Create</td>
+                     <td>ADMIN</td>
+                  </tr>
+                  <tr>
+                     <td>Bulk Update</td>
+                     <td>ADMIN</td>
+                  </tr>
+                  <tr>
+                     <td>Update</td>
+                     <td>ADMIN</td>
+                  </tr>
+                  <tr>
+                     <td>Delete</td>
+                     <td>ADMIN</td>
+                  </tr>
+               </table>
+               <h4>Fields</h4>
+               <table>
+                  <thead>
+                     <tr>
+                        <th>Field Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                     </tr>
+                  </thead>
+                  <!--move id to the top for display-->
+                  <tr>
+                     <td><span id="resources-skills-id">id</span></td>
+                     <td>Id</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-skills-name">name</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+                  <tr>
+                     <td><span id="resources-skills-category">category</span></td>
+                     <td>String</td>
+                     <td></td>
+                  </tr>
+               </table>
+               <!--allow subtemplates to add content after the fields-->
+            </section>
+         </section>
+         <section id="footer"></section>
+      </div>
+      <nav>
+         <ul>
+            <li><a href="#intro">Introduction</a></li>
+            <li><a href="#overview">Usage Overview</a></li>
+            <li>
+               <h3 class="h4">Resource Types</h3>
+               <ul>
+                  <li><a href="#resources-presenters">Presenter</a></li>
+                  <li><a href="#resources-events">Event</a></li>
+                  <li><a href="#resources-jobs">Job</a></li>
+                  <li><a href="#resources-teams">Team</a></li>
+                  <li><a href="#resources-projects">Project</a></li>
+                  <li><a href="#resources-team-memberships">TeamMembership</a></li>
+                  <li><a href="#resources-event-statuses">EventStatus</a></li>
+                  <li><a href="#resources-skills">Skill</a></li>
+               </ul>
+            </li>
+         </ul>
+      </nav>
+   </body>
+</html>
