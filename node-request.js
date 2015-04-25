@@ -6,7 +6,7 @@ request({
   //this disables the ssl security (would accept a fake certificate). see:
   //http://stackoverflow.com/questions/20082893/unable-to-verify-leaf-signature
   "rejectUnauthorized": false,
-  "url": 'https://api.tnyu.org/v2/events',
+  "url": 'https://api.tnyu.org/v2-test/events',
   "headers": {
   	"content-type": "application/vnd.api+json",
   	"accept": "application/*, text/html, */*"m
